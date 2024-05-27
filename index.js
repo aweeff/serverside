@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -54,9 +53,7 @@ app.post('/api/register', async (req, res) => {
 
     await newUser.save();
 
-    const token = jwt.sign({ userId: newUser._id }, 'your_jwt_secret', { expiresIn: '1h' });
-
-    res.status(201).json({ token });
+    res.status(201).json({ newUser });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -77,9 +74,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
-
-    res.status(200).json({ token });
+    res.status(200).json({ user });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -113,6 +108,8 @@ app.post('/api/login', async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   });
+
+
 
 // Start server
 app.listen(port, () => {
