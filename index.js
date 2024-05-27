@@ -84,6 +84,35 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+  
+  // Middleware
+  app.use(bodyParser.json());
+  
+  // Get User Profile Route
+  app.get('/api/profile/:userId', async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      res.status(200).json(user);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
+  // Update User Profile Route
+  app.put('/api/profile/:userId', async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const updatedUser = req.body;
+      await User.findByIdAndUpdate(userId, updatedUser);
+      res.status(200).json({ message: 'User profile updated successfully' });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
 // Start server
 app.listen(port, () => {
