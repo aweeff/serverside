@@ -27,6 +27,9 @@ db.once('open', () => {
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  address :{type: String, required: true},
+  phone: {type: String, required:true},
+  name:{ type: String, required: true },
 });
 
 const User = mongoose.model('User', userSchema);
@@ -49,6 +52,9 @@ app.post('/api/register', async (req, res) => {
     const newUser = new User({
       email,
       password: hashedPassword,
+      phone:"change me",
+      address:"change me",
+      name:"change me"
     });
 
     await newUser.save();
@@ -74,7 +80,8 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    res.status(200).json({ user });
+    res.status(200).json(user);
+    console.log(user)
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -84,28 +91,41 @@ app.post('/api/login', async (req, res) => {
   app.use(bodyParser.json());
   
   // Get User Profile Route
-  app.get('/api/profile/:userId', async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      res.status(200).json(user);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+app.get('api/fetchProfile', async (req, res) => {
+  const { email } = req.query; // Assume we're passing the email as a query parameter
+
+  try {
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).send({ message: 'User not found' });
     }
-  });
+    res.send(user);
+  } catch (error) {
+    console.log('Error fetching user profile:', error);
+    res.status(500).send({ message: 'Failed to fetch user profile' });
+  }
+});
   
   // Update User Profile Route
-  app.put('/api/profile/:userId', async (req, res) => {
+  app.post('/api/update', async (req, res) => {
+    const { mainmail, name, email, phone, address } = req.body;
+
     try {
-      const userId = req.params.userId;
-      const updatedUser = req.body;
-      await User.findByIdAndUpdate(userId, updatedUser);
-      res.status(200).json({ message: 'User profile updated successfully' });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+      // Find the user by the original email and update their profile
+      const updatedUser = await User.findOneAndUpdate(
+          { email: mainmail }, // Find by original email
+          { name, email, phone, address }, // New values to set
+          { new: true } // Option to return the updated document
+      );
+
+      if (!updatedUser) {
+        return res.status(404).send({ message: 'User not found' });
+      }
+
+      res.send(updatedUser);
+    } catch (error) {
+      console.log('Error updating user profile:', error);
+      res.status(500).send({ message: 'Failed to update user profile' });
     }
   });
 
