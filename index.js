@@ -106,7 +106,7 @@ app.post('/api/login', async (req, res) => {
 app.use(bodyParser.json());
 
 // Get User Profile Route
-app.get('api/fetchProfile', async (req, res) => {
+app.get('api/fetchProfile/:email', async (req, res) => {
   const { email } = req.query; // Assume we're passing the email as a query parameter
 
   try {
@@ -170,6 +170,20 @@ app.post('/api/tickets', async (req, res) => {
   }catch (err) {
     res.status(500).json({ message: 'Server error' });
     console.log(err.message)
+  }
+});
+
+app.get('/api/tickets/:email', async (req, res) => {
+  try {
+      const { email } = req.params;
+      const tickets = await Ticket.find({ email: email });
+      if (tickets.length === 0) {
+          return res.status(404).json({ message: 'No tickets found for this email' });
+      }
+      res.json(tickets);
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error while retrieving tickets' });
   }
 });
 
