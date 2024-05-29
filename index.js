@@ -27,10 +27,25 @@ db.once('open', () => {
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  address :{type: String, required: true},
-  phone: {type: String, required:true},
-  name:{ type: String, required: true },
+  address: { type: String, required: true },
+  phone: { type: String, required: true },
+  name: { type: String, required: true },
 });
+
+const ticketSchema = new mongoose.Schema({
+  email: { type: String, required: true },
+  departure: { type: String, required: true },
+  destination: { type: String, required: true },
+  departureDate: { type: Date, required: true },
+  returnDate: {
+    type: Date,
+    required: function() { return this.isRoundTrip; }
+  },  
+  travelClass: { type: String, required: true },
+  isRoundTrip: { type: Boolean, required: true },
+});
+
+const Ticket = mongoose.model('Ticket', ticketSchema);
 
 const User = mongoose.model('User', userSchema);
 
@@ -52,9 +67,9 @@ app.post('/api/register', async (req, res) => {
     const newUser = new User({
       email,
       password: hashedPassword,
-      phone:"change me",
-      address:"change me",
-      name:"change me"
+      phone: "change me",
+      address: "change me",
+      name: "change me"
     });
 
     await newUser.save();
@@ -86,11 +101,11 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-  
-  // Middleware
-  app.use(bodyParser.json());
-  
-  // Get User Profile Route
+
+// Middleware
+app.use(bodyParser.json());
+
+// Get User Profile Route
 app.get('api/fetchProfile', async (req, res) => {
   const { email } = req.query; // Assume we're passing the email as a query parameter
 
@@ -105,31 +120,58 @@ app.get('api/fetchProfile', async (req, res) => {
     res.status(500).send({ message: 'Failed to fetch user profile' });
   }
 });
-  
-  // Update User Profile Route
-  app.post('/api/update', async (req, res) => {
-    const { mainmail, name, email, phone, address } = req.body;
 
-    try {
-      // Find the user by the original email and update their profile
-      const updatedUser = await User.findOneAndUpdate(
-          { email: mainmail }, // Find by original email
-          { name, email, phone, address }, // New values to set
-          { new: true } // Option to return the updated document
-      );
+// Update User Profile Route
+app.post('/api/update', async (req, res) => {
+  const { mainmail, name, email, phone, address } = req.body;
 
-      if (!updatedUser) {
-        return res.status(404).send({ message: 'User not found' });
-      }
+  try {
+    // Find the user by the original email and update their profile
+    const updatedUser = await User.findOneAndUpdate(
+      { email: mainmail }, // Find by original email
+      { name, email, phone, address }, // New values to set
+      { new: true } // Option to return the updated document
+    );
 
-      res.send(updatedUser);
-    } catch (error) {
-      console.log('Error updating user profile:', error);
-      res.status(500).send({ message: 'Failed to update user profile' });
+    if (!updatedUser) {
+      return res.status(404).send({ message: 'User not found' });
     }
-  });
+
+    res.send(updatedUser);
+  } catch (error) {
+    console.log('Error updating user profile:', error);
+    res.status(500).send({ message: 'Failed to update user profile' });
+  }
+});
 
 
+
+app.post('/api/tickets', async (req, res) => {
+  const {email,departure,destination,departureDate, returnDate,travelClass,isRoundTrip} = req.body;
+  try {
+    const user = await User.findOne({email});
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+    console.log(user, "user found")
+
+    const newTicket = new Ticket({
+      email,
+      departure,
+      destination,
+      departureDate,
+      returnDate,
+      travelClass,
+      isRoundTrip
+    });
+
+    await newTicket.save();
+    res.status(200).json({ newTicket });
+  }catch (err) {
+    res.status(500).json({ message: 'Server error' });
+    console.log(err.message)
+  }
+});
 
 // Start server
 app.listen(port, () => {
